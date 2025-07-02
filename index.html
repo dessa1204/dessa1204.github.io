@@ -234,9 +234,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="pt-6 mt-6 border-t border-slate-200 flex justify-end space-x-3">
-                    <button type="button" id="save-sim-params-btn" class="bg-slate-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-slate-700 transition">Salvar Parâmetros</button>
-                    <button type="button" id="apply-sim-results-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-700 transition">Aplicar Resultados ao Item</button>
+                <div class="pt-6 mt-6 border-t border-slate-200 flex justify-end">
+                    <button type="button" id="apply-sim-results-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-700 transition">Salvar e Aplicar no Item</button>
                 </div>
             </div>
         </div>
@@ -289,7 +288,6 @@
             const orderQtyHeader = document.getElementById('order-qty-header');
 
             const simulatorTitle = document.getElementById('simulator-title');
-            const saveSimParamsBtn = document.getElementById('save-sim-params-btn');
             const applySimResultsBtn = document.getElementById('apply-sim-results-btn');
 
             const stddevInput = document.getElementById('stddev-input');
@@ -303,7 +301,7 @@
             let itemToDeleteId = null;
             let currentSimulatingItemId = null;
 
-            const STORAGE_KEY = 'inventoryApp.data.v1.14';
+            const STORAGE_KEY = 'inventoryApp.data.v1.15';
 
             // Funções de Persistência
             const saveInventory = () => {
@@ -562,26 +560,20 @@
                 openModal(simulatorModal);
             };
 
-            saveSimParamsBtn.addEventListener('click', () => {
+            applySimResultsBtn.addEventListener('click', () => {
                 if (!currentSimulatingItemId) return;
                 const item = inventory.find(i => i.id === currentSimulatingItemId);
                 if (item) {
-                    item.simParams = {
+                    // Salva os parâmetros da simulação no item
+                     item.simParams = {
                         avgDemand: Number(simInputs.avgDemand.value),
                         stdDevDemand: Number(simInputs.stdDevDemand.value),
                         avgLeadTime: Number(simInputs.avgLeadTime.value),
                         stdDevLeadTime: Number(simInputs.stdDevLeadTime.value),
                         serviceLevel: Number(simInputs.serviceLevel.value),
                     };
-                    saveInventory();
-                    showToast(`Parâmetros do simulador salvos para ${item.name}`);
-                }
-            });
 
-            applySimResultsBtn.addEventListener('click', () => {
-                if (!currentSimulatingItemId) return;
-                const item = inventory.find(i => i.id === currentSimulatingItemId);
-                if (item) {
+                    // Aplica os resultados da simulação ao item
                     const safetyStock = Math.round(parseFloat(simSafetyStockDisplay.textContent));
                     const reorderPoint = Math.round(parseFloat(simReorderPointDisplay.textContent));
                     
@@ -592,7 +584,7 @@
                     renderTable();
                     renderSummary();
                     closeModal(simulatorModal);
-                    showToast(`Estratégia de risco aplicada para ${item.name}`);
+                    showToast(`Estratégia salva e aplicada para ${item.name}`);
                 }
             });
             
