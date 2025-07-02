@@ -190,22 +190,27 @@
                         <div class="space-y-6">
                             <div>
                                 <label for="sim-avgDemand" class="block text-sm font-medium text-slate-700">Demanda Média Diária: <span id="sim-avgDemandValue" class="font-bold text-blue-600">50</span></label>
+                                <p class="text-xs text-slate-500 mt-1">Quantas unidades você vende, em média, por dia.</p>
                                 <input type="range" id="sim-avgDemand" min="1" max="500" value="50" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
                             </div>
                             <div>
                                 <label for="sim-stdDevDemand" class="block text-sm font-medium text-slate-700">Desvio Padrão da Demanda: <span id="sim-stdDevDemandValue" class="font-bold text-blue-600">10</span></label>
+                                <p class="text-xs text-slate-500 mt-1">Mede a instabilidade das suas vendas. Valor alto = vendas imprevisíveis.</p>
                                 <input type="range" id="sim-stdDevDemand" min="0" max="100" value="10" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
                             </div>
                             <div>
                                 <label for="sim-avgLeadTime" class="block text-sm font-medium text-slate-700">Lead Time Médio (dias): <span id="sim-avgLeadTimeValue" class="font-bold text-blue-600">15</span></label>
+                                <p class="text-xs text-slate-500 mt-1">O tempo médio, em dias, que seu fornecedor leva para entregar.</p>
                                 <input type="range" id="sim-avgLeadTime" min="1" max="60" value="15" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
                             </div>
                             <div>
                                 <label for="sim-stdDevLeadTime" class="block text-sm font-medium text-slate-700">Desvio Padrão do Lead Time (dias): <span id="sim-stdDevLeadTimeValue" class="font-bold text-blue-600">3</span></label>
+                                <p class="text-xs text-slate-500 mt-1">Mede a pontualidade do fornecedor. Valor alto = fornecedor não confiável.</p>
                                 <input type="range" id="sim-stdDevLeadTime" min="0" max="30" value="3" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
                             </div>
                             <div>
                                 <label for="sim-serviceLevel" class="block text-sm font-medium text-slate-700">Nível de Serviço Desejado: <span id="sim-serviceLevelValue" class="font-bold text-blue-600">95%</span></label>
+                                <p class="text-xs text-slate-500 mt-1">Sua meta de não faltar produto. 95% é um padrão comum.</p>
                                 <input type="range" id="sim-serviceLevel" min="80" max="99.9" step="0.1" value="95" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
                             </div>
                         </div>
