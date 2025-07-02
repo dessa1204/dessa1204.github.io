@@ -72,7 +72,6 @@
                         <option value="all">Todas as Categorias</option>
                     </select>
                     <button id="low-stock-filter-btn" class="w-full sm:w-auto text-sm bg-yellow-100 text-yellow-800 px-3 py-2 rounded-md font-medium hover:bg-yellow-200 transition">Mostrar Itens para Reposição</button>
-                    <button id="simulator-btn" class="w-full sm:w-auto text-sm bg-slate-600 text-white px-3 py-2 rounded-md font-semibold hover:bg-slate-700 transition">Simulador de Risco</button>
                     <button id="add-item-btn" class="w-full sm:w-auto text-sm bg-blue-600 text-white px-3 py-2 rounded-md font-semibold hover:bg-blue-700 transition">
                         Adicionar Item
                     </button>
@@ -162,16 +161,19 @@
 
     <div id="simulator-modal" class="fixed inset-0 z-50 overflow-y-auto p-4 modal-backdrop hidden flex justify-center">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl modal-content transform scale-95 my-8">
-            <div class="p-6 border-b border-slate-200 flex justify-between items-center">
-                <h3 class="text-xl font-semibold">Simulador de Risco Quantitativo</h3>
-                <button id="close-simulator-btn" class="p-1 rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition">
-                    <span class="text-2xl font-bold">&times;</span>
-                </button>
+            <div class="p-6 border-b border-slate-200">
+                <div class="flex justify-between items-center">
+                    <h3 id="simulator-title" class="text-xl font-semibold">Simulador de Risco</h3>
+                    <button id="close-simulator-btn" class="p-1 rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition">
+                        <span class="text-2xl font-bold">&times;</span>
+                    </button>
+                </div>
+                <p id="simulator-subtitle" class="text-sm text-slate-500">Calcule os parâmetros de risco para este item específico.</p>
             </div>
             <div class="p-6">
                 <div class="mb-8 p-4 border border-dashed border-slate-300 rounded-lg">
                     <h4 class="text-md font-semibold text-slate-700">Calculadora Rápida de Desvio Padrão</h4>
-                    <p class="text-xs text-slate-500 mt-1 mb-2">Não sabe o desvio padrão da sua demanda? Cole seus dados de vendas diárias abaixo para descobrir.</p>
+                    <p class="text-xs text-slate-500 mt-1 mb-2">Cole seus dados de vendas diárias (separados por vírgula ou espaço) para descobrir a instabilidade da sua demanda.</p>
                     <div class="flex flex-col sm:flex-row gap-2">
                         <textarea id="stddev-input" rows="1" class="flex-grow rounded-md border-slate-300 shadow-sm sm:text-sm" placeholder="Ex: 50, 55, 48, 60, 52..."></textarea>
                         <button id="calculate-stddev-btn" class="bg-slate-200 text-slate-800 px-4 py-2 text-sm font-medium rounded-md hover:bg-slate-300 transition">Calcular</button>
@@ -182,45 +184,38 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:items-start">
-                    <div class="p-6 border rounded-lg bg-slate-50">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:items-stretch">
+                    <div class="p-6 border rounded-lg bg-slate-50 flex flex-col">
                         <h3 class="text-lg font-semibold text-slate-800 mb-6">Ajuste os Parâmetros</h3>
                         <div class="space-y-6">
                             <div>
                                 <label for="sim-avgDemand" class="block text-sm font-medium text-slate-700">Demanda Média Diária: <span id="sim-avgDemandValue" class="font-bold text-blue-600">50</span></label>
-                                <p class="text-xs text-slate-500 mt-1">Quantas unidades você vende, em média, por dia.</p>
                                 <input type="range" id="sim-avgDemand" min="1" max="500" value="50" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
                             </div>
                             <div>
                                 <label for="sim-stdDevDemand" class="block text-sm font-medium text-slate-700">Desvio Padrão da Demanda: <span id="sim-stdDevDemandValue" class="font-bold text-blue-600">10</span></label>
-                                <p class="text-xs text-slate-500 mt-1">Mede a instabilidade das suas vendas. Valor alto = vendas imprevisíveis.</p>
                                 <input type="range" id="sim-stdDevDemand" min="0" max="100" value="10" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
                             </div>
                             <div>
                                 <label for="sim-avgLeadTime" class="block text-sm font-medium text-slate-700">Lead Time Médio (dias): <span id="sim-avgLeadTimeValue" class="font-bold text-blue-600">15</span></label>
-                                <p class="text-xs text-slate-500 mt-1">O tempo médio, em dias, que seu fornecedor leva para entregar.</p>
                                 <input type="range" id="sim-avgLeadTime" min="1" max="60" value="15" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
                             </div>
                             <div>
                                 <label for="sim-stdDevLeadTime" class="block text-sm font-medium text-slate-700">Desvio Padrão do Lead Time (dias): <span id="sim-stdDevLeadTimeValue" class="font-bold text-blue-600">3</span></label>
-                                <p class="text-xs text-slate-500 mt-1">Mede a pontualidade do fornecedor. Valor alto = fornecedor não confiável.</p>
                                 <input type="range" id="sim-stdDevLeadTime" min="0" max="30" value="3" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
                             </div>
                             <div>
                                 <label for="sim-serviceLevel" class="block text-sm font-medium text-slate-700">Nível de Serviço Desejado: <span id="sim-serviceLevelValue" class="font-bold text-blue-600">95%</span></label>
-                                <p class="text-xs text-slate-500 mt-1">Sua meta de não faltar produto. 95% é um padrão comum.</p>
                                 <input type="range" id="sim-serviceLevel" min="80" max="99.9" step="0.1" value="95" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
                             </div>
                         </div>
                     </div>
-                    <div class="flex flex-col space-y-4">
-                        <div class="p-6 border rounded-lg bg-slate-50 flex-grow">
-                             <h3 class="text-lg font-semibold text-slate-800 mb-2">Resultados Calculados</h3>
-                             <div class="chart-container">
-                                <canvas id="sim-resultsChart"></canvas>
-                             </div>
-                        </div>
-                         <div class="p-4 border rounded-lg bg-slate-50">
+                    <div class="p-6 border rounded-lg bg-slate-50 flex flex-col">
+                         <h3 class="text-lg font-semibold text-slate-800 mb-2">Resultados Calculados</h3>
+                         <div class="chart-container flex-grow">
+                            <canvas id="sim-resultsChart"></canvas>
+                         </div>
+                         <div class="p-4 mt-4 border-t border-slate-200">
                             <div class="flex justify-around text-center">
                                 <div>
                                     <p class="text-sm font-medium text-slate-600">Margem de Segurança (ES)</p>
@@ -233,6 +228,10 @@
                             </div>
                         </div>
                     </div>
+                </div>
+                <div class="pt-6 mt-6 border-t border-slate-200 flex justify-end space-x-3">
+                    <button type="button" id="save-sim-params-btn" class="bg-slate-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-slate-700 transition">Salvar Parâmetros</button>
+                    <button type="button" id="apply-sim-results-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-700 transition">Aplicar Resultados ao Item</button>
                 </div>
             </div>
         </div>
@@ -276,7 +275,6 @@
             const lowStockItemsEl = document.getElementById('low-stock-items');
             const categoryFilter = document.getElementById('category-filter');
             const lowStockFilterBtn = document.getElementById('low-stock-filter-btn');
-            const simulatorBtn = document.getElementById('simulator-btn');
             const simulatorModal = document.getElementById('simulator-modal');
             const closeSimulatorBtn = document.getElementById('close-simulator-btn');
             const deleteConfirmModal = document.getElementById('delete-confirm-modal');
@@ -284,6 +282,10 @@
             const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
             const deleteItemInfo = document.getElementById('delete-item-info');
             const orderQtyHeader = document.getElementById('order-qty-header');
+
+            const simulatorTitle = document.getElementById('simulator-title');
+            const saveSimParamsBtn = document.getElementById('save-sim-params-btn');
+            const applySimResultsBtn = document.getElementById('apply-sim-results-btn');
 
             const stddevInput = document.getElementById('stddev-input');
             const calculateStddevBtn = document.getElementById('calculate-stddev-btn');
@@ -294,8 +296,9 @@
             let inventory = [];
             let isLowStockFilterActive = false;
             let itemToDeleteId = null;
+            let currentSimulatingItemId = null;
 
-            const STORAGE_KEY = 'inventoryApp.data.v1.9';
+            const STORAGE_KEY = 'inventoryApp.data.v1.14';
 
             // Funções de Persistência
             const saveInventory = () => {
@@ -308,9 +311,9 @@
 
             const loadInventory = () => {
                 const defaultInventory = [
-                    { id: 'PAR-001', name: 'Parafuso Sextavado M8', category: 'Fixadores', supplier: 'Fornecedor A', quantity: 1500, unit: 'Peça', cost: 0.25, safetyStock: 500, reorderPoint: 750 },
-                    { id: 'TINT-012', name: 'Tinta Acrílica Branca 18L', category: 'Pintura', supplier: 'Fornecedor B', quantity: 8, unit: 'Lata', cost: 280, safetyStock: 5, reorderPoint: 10 },
-                    { id: 'LIX-033', name: 'Lixa para Ferro Grão 100', category: 'Abrasivos', supplier: 'Fornecedor A', quantity: 450, unit: 'Folha', cost: 1.50, safetyStock: 100, reorderPoint: 150 },
+                    { id: 'PAR-001', name: 'Parafuso Sextavado M8', category: 'Fixadores', supplier: 'Fornecedor A', quantity: 1500, unit: 'Peça', cost: 0.25, safetyStock: 500, reorderPoint: 750, simParams: { avgDemand: 100, stdDevDemand: 20, avgLeadTime: 10, stdDevLeadTime: 2, serviceLevel: 95 } },
+                    { id: 'TINT-012', name: 'Tinta Acrílica Branca 18L', category: 'Pintura', supplier: 'Fornecedor B', quantity: 8, unit: 'Lata', cost: 280, safetyStock: 5, reorderPoint: 10, simParams: { avgDemand: 5, stdDevDemand: 2, avgLeadTime: 15, stdDevLeadTime: 5, serviceLevel: 90 } },
+                    { id: 'LIX-033', name: 'Lixa para Ferro Grão 100', category: 'Abrasivos', supplier: 'Fornecedor A', quantity: 450, unit: 'Folha', cost: 1.50, safetyStock: 100, reorderPoint: 150, simParams: { avgDemand: 50, stdDevDemand: 10, avgLeadTime: 7, stdDevLeadTime: 1, serviceLevel: 98 } },
                 ];
                 
                 try {
@@ -405,7 +408,8 @@
                             ${orderQtyCell}
                             <td class="px-6 py-4 font-medium">${formatCurrency(totalValue)}</td>
                             <td class="px-6 py-4 text-center">
-                                <button data-id="${item.id}" class="edit-btn text-blue-600 hover:text-blue-800 font-medium">Editar</button>
+                                <button data-id="${item.id}" class="simulate-btn text-green-600 hover:text-green-800 font-medium">Simular</button>
+                                <button data-id="${item.id}" class="edit-btn text-blue-600 hover:text-blue-800 font-medium ml-4">Editar</button>
                                 <button data-id="${item.id}" class="delete-btn text-red-600 hover:text-red-800 font-medium ml-4">Excluir</button>
                             </td>
                         </tr>
@@ -469,7 +473,8 @@
                         alert('Erro: O novo Código/SKU já existe em outro item. Por favor, use um código único.');
                         return;
                     }
-                    inventory = inventory.map(item => (item.id === originalId ? newItemData : item));
+                    const existingItem = inventory.find(item => item.id === originalId);
+                    inventory = inventory.map(item => (item.id === originalId ? { ...existingItem, ...newItemData } : item));
                 } else {
                     if (inventory.some(item => item.id === newSku)) {
                         alert('Erro: O Código/SKU já existe. Por favor, use um código único.');
@@ -503,14 +508,18 @@
             const simSafetyStockDisplay = document.getElementById('sim-safetyStockDisplay');
             const simReorderPointDisplay = document.getElementById('sim-reorderPointDisplay');
             
-            const simResultsChart = new Chart(document.getElementById('sim-resultsChart').getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: ['Margem de Segurança', 'Ponto de Ressuprimento'],
-                    datasets: [{ label: 'Unidades', data: [0, 0], backgroundColor: ['#d97706', '#2563eb'] }]
-                },
-                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
-            });
+            let simResultsChart;
+            const initializeSimChart = () => {
+                const ctx = document.getElementById('sim-resultsChart').getContext('2d');
+                simResultsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Margem de Segurança', 'Ponto de Ressuprimento'],
+                        datasets: [{ label: 'Unidades', data: [0, 0], backgroundColor: ['#d97706', '#2563eb'] }]
+                    },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+                });
+            };
 
             const calculateSafetyStock = () => {
                 const D_avg = Number(simInputs.avgDemand.value), sigma_d = Number(simInputs.stdDevDemand.value);
@@ -527,12 +536,66 @@
                 simSafetyStockDisplay.textContent = Math.round(es);
                 simReorderPointDisplay.textContent = Math.round(pr);
             };
+
+            const openSimulatorModal = (item) => {
+                if (!item) return;
+                currentSimulatingItemId = item.id;
+                
+                simulatorTitle.textContent = `Simulador de Risco: ${item.name}`;
+                
+                const params = item.simParams || {};
+                simInputs.avgDemand.value = params.avgDemand || 50;
+                simInputs.stdDevDemand.value = params.stdDevDemand || 10;
+                simInputs.avgLeadTime.value = params.avgLeadTime || 15;
+                simInputs.stdDevLeadTime.value = params.stdDevLeadTime || 3;
+                simInputs.serviceLevel.value = params.serviceLevel || 95;
+                
+                stddevInput.value = '';
+                stddevResultContainer.classList.add('hidden');
+
+                calculateSafetyStock();
+                openModal(simulatorModal);
+            };
+
+            saveSimParamsBtn.addEventListener('click', () => {
+                if (!currentSimulatingItemId) return;
+                const item = inventory.find(i => i.id === currentSimulatingItemId);
+                if (item) {
+                    item.simParams = {
+                        avgDemand: Number(simInputs.avgDemand.value),
+                        stdDevDemand: Number(simInputs.stdDevDemand.value),
+                        avgLeadTime: Number(simInputs.avgLeadTime.value),
+                        stdDevLeadTime: Number(simInputs.stdDevLeadTime.value),
+                        serviceLevel: Number(simInputs.serviceLevel.value),
+                    };
+                    saveInventory();
+                    showToast(`Parâmetros do simulador salvos para ${item.name}`);
+                }
+            });
+
+            applySimResultsBtn.addEventListener('click', () => {
+                if (!currentSimulatingItemId) return;
+                const item = inventory.find(i => i.id === currentSimulatingItemId);
+                if (item) {
+                    const safetyStock = Math.round(parseFloat(simSafetyStockDisplay.textContent));
+                    const reorderPoint = Math.round(parseFloat(simReorderPointDisplay.textContent));
+                    
+                    item.safetyStock = safetyStock;
+                    item.reorderPoint = reorderPoint;
+
+                    saveInventory();
+                    renderTable();
+                    renderSummary();
+                    closeModal(simulatorModal);
+                    showToast(`Estratégia de risco aplicada para ${item.name}`);
+                }
+            });
             
             // Calculadora de Desvio Padrão
             const calculateStdDev = (data) => {
                 if (!data || data.length < 2) return 0;
                 const mean = data.reduce((acc, val) => acc + val, 0) / data.length;
-                const variance = data.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / (data.length -1); // Sample Standard Deviation
+                const variance = data.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / (data.length -1);
                 return Math.sqrt(variance);
             };
 
@@ -554,8 +617,7 @@
                 const valueToApply = parseFloat(stddevResultEl.textContent);
                 if (!isNaN(valueToApply)) {
                     simInputs.stdDevDemand.value = valueToApply;
-                    simValues.stdDevDemand.textContent = valueToApply.toFixed(2);
-                    calculateSafetyStock(); // Recalculate simulator with new value
+                    calculateSafetyStock();
                 }
             });
 
@@ -570,6 +632,10 @@
                         deleteItemInfo.textContent = `${item.name} (SKU: ${item.id})`;
                         openModal(deleteConfirmModal);
                     }
+                }));
+                document.querySelectorAll('.simulate-btn').forEach(btn => btn.addEventListener('click', e => {
+                     const itemToSimulate = inventory.find(item => item.id === e.target.dataset.id);
+                     openSimulatorModal(itemToSimulate);
                 }));
             };
 
@@ -588,11 +654,9 @@
                 renderTable();
             });
 
-            simulatorBtn.addEventListener('click', () => openModal(simulatorModal));
             closeSimulatorBtn.addEventListener('click', () => closeModal(simulatorModal));
             Object.values(simInputs).forEach(input => input.addEventListener('input', calculateSafetyStock));
             
-            // Listeners para fechar modals
             itemModal.addEventListener('click', (e) => { if (e.target === itemModal) closeModal(itemModal); });
             simulatorModal.addEventListener('click', (e) => { if (e.target === simulatorModal) closeModal(simulatorModal); });
             deleteConfirmModal.addEventListener('click', (e) => { if (e.target === deleteConfirmModal) closeModal(deleteConfirmModal); });
@@ -621,7 +685,7 @@
             
             // Inicialização
             loadInventory();
-            calculateSafetyStock(); // Para o simulador
+            initializeSimChart();
             populateCategoryFilter();
             renderTable();
             renderSummary();
