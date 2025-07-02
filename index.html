@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão de Estoque</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6;
+        }
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+        .highlight-row {
+            background-color: #fef9c3; /* Amarelo claro para destaque */
+        }
+        .highlight-row:hover {
+            background-color: #fef08a;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            max-width: 600px;
+            height: 250px;
+            max-height: 250px;
+        }
+        .toast-notification {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-slate-900">Painel de Gestão de Estoque</h1>
+            <p class="text-slate-600 mt-1">Gerencie seu inventário de forma simples e visual.</p>
+        </header>
+
+        <!-- Seção de Resumo -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-sm font-medium text-slate-500">Valor Total em Estoque</h3>
+                <p id="total-value" class="text-3xl font-semibold text-slate-900 mt-2">R$ 0,00</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-sm font-medium text-slate-500">Nº de Itens (SKUs)</h3>
+                <p id="total-items" class="text-3xl font-semibold text-slate-900 mt-2">0</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow border-l-4 border-yellow-400">
+                <h3 class="text-sm font-medium text-slate-500">Itens para Reposição (Total)</h3>
+                <p id="low-stock-items" class="text-3xl font-semibold text-yellow-600 mt-2">0</p>
+            </div>
+        </div>
+
+        <!-- Tabela de Inventário -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="p-4 sm:p-6 flex flex-wrap gap-4 justify-between items-center border-b border-slate-200">
+                <h2 class="text-xl font-semibold w-full sm:w-auto">Inventário Atual</h2>
+                <div class="flex flex-wrap gap-4 items-center">
+                     <select id="category-filter" class="w-full sm:w-auto bg-white border border-slate-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="all">Todas as Categorias</option>
+                    </select>
+                    <button id="low-stock-filter-btn" class="w-full sm:w-auto text-sm bg-yellow-100 text-yellow-800 px-3 py-2 rounded-md font-medium hover:bg-yellow-200 transition">Mostrar Itens para Reposição</button>
+                    <button id="simulator-btn" class="w-full sm:w-auto text-sm bg-slate-600 text-white px-3 py-2 rounded-md font-semibold hover:bg-slate-700 transition">Simulador de Risco</button>
+                    <button id="add-item-btn" class="w-full sm:w-auto text-sm bg-blue-600 text-white px-3 py-2 rounded-md font-semibold hover:bg-blue-700 transition">
+                        Adicionar Item
+                    </button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-slate-500">
+                    <thead class="text-xs text-slate-700 uppercase bg-slate-100">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Produto</th>
+                            <th scope="col" class="px-6 py-3">Categoria</th>
+                            <th scope="col" class="px-6 py-3 text-center">Qtd. Atual</th>
+                            <th scope="col" class="px-6 py-3 text-center">Ponto de Ressuprimento</th>
+                            <th id="order-qty-header" scope="col" class="px-6 py-3 text-center hidden">Qtd. a Pedir</th>
+                            <th scope="col" class="px-6 py-3">Valor Total</th>
+                            <th scope="col" class="px-6 py-3 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-table-body">
+                        <!-- Linhas da tabela serão inseridas aqui via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Adicionar/Editar Item -->
+    <div id="item-modal" class="fixed inset-0 z-50 overflow-y-auto p-4 modal-backdrop hidden flex justify-center">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl modal-content transform scale-95 my-8">
+            <div class="p-6 border-b border-slate-200 flex justify-between items-center">
+                <h3 id="modal-title" class="text-xl font-semibold">Adicionar Novo Item</h3>
+                <button id="close-item-modal-btn" class="p-1 rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition">
+                    <span class="text-2xl font-bold">&times;</span>
+                </button>
+            </div>
+            <form id="item-form" class="p-6 space-y-4">
+                <input type="hidden" id="item-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="sku" class="block text-sm font-medium text-slate-700">Código/SKU</label>
+                        <input type="text" id="sku" required class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-slate-700">Nome do Produto</label>
+                        <input type="text" id="name" required class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    </div>
+                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-slate-700">Categoria</label>
+                        <input type="text" id="category" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="supplier" class="block text-sm font-medium text-slate-700">Fornecedor Principal</label>
+                        <input type="text" id="supplier" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    </div>
+                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="quantity" class="block text-sm font-medium text-slate-700">Quantidade Atual</label>
+                        <input type="number" id="quantity" required min="0" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="unit" class="block text-sm font-medium text-slate-700">Unidade</label>
+                        <input type="text" id="unit" placeholder="Peça, Caixa, Kg..." class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="cost" class="block text-sm font-medium text-slate-700">Custo Unitário (R$)</label>
+                        <input type="number" id="cost" required min="0" step="0.01" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    </div>
+                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="safety-stock" class="block text-sm font-medium text-slate-700">Estoque de Segurança</label>
+                        <input type="number" id="safety-stock" min="0" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="reorder-point" class="block text-sm font-medium text-slate-700">Ponto de Ressuprimento</label>
+                        <input type="number" id="reorder-point" min="0" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    </div>
+                </div>
+                <div class="pt-4 flex justify-end space-x-3">
+                    <button type="button" id="cancel-btn" class="bg-white text-slate-700 px-4 py-2 rounded-md border border-slate-300 hover:bg-slate-50 transition">Cancelar</button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-700 transition">Salvar Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para Simulador de Risco -->
+    <div id="simulator-modal" class="fixed inset-0 z-50 overflow-y-auto p-4 modal-backdrop hidden flex justify-center">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl modal-content transform scale-95 my-8">
+            <div class="p-6 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="text-xl font-semibold">Simulador de Risco Quantitativo</h3>
+                <button id="close-simulator-btn" class="p-1 rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition">
+                    <span class="text-2xl font-bold">&times;</span>
+                </button>
+            </div>
+            <div class="p-6">
+                <p class="text-slate-600 mb-6 max-w-3xl">Use este simulador para calcular o Estoque de Segurança (ES) e o Ponto de Ressuprimento (PR) ideais, considerando a variabilidade da sua demanda e a inconsistência do seu fornecedor.</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="p-6 border rounded-lg bg-slate-50">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-6">Ajuste os Parâmetros</h3>
+                        <div class="space-y-6">
+                            <div>
+                                <label for="sim-avgDemand" class="block text-sm font-medium text-slate-700">Demanda Média Diária: <span id="sim-avgDemandValue" class="font-bold text-blue-600">50</span></label>
+                                <p class="text-xs text-slate-500 mt-1">Quantas unidades você vende, em média, por dia.</p>
+                                <input type="range" id="sim-avgDemand" min="1" max="500" value="50" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div>
+                                <label for="sim-stdDevDemand" class="block text-sm font-medium text-slate-700">Desvio Padrão da Demanda: <span id="sim-stdDevDemandValue" class="font-bold text-blue-600">10</span></label>
+                                <p class="text-xs text-slate-500 mt-1">Mede a instabilidade das suas vendas. Valor alto = vendas imprevisíveis.</p>
+                                <input type="range" id="sim-stdDevDemand" min="0" max="100" value="10" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div>
+                                <label for="sim-avgLeadTime" class="block text-sm font-medium text-slate-700">Lead Time Médio (dias): <span id="sim-avgLeadTimeValue" class="font-bold text-blue-600">15</span></label>
+                                <p class="text-xs text-slate-500 mt-1">O tempo médio, em dias, que seu fornecedor leva para entregar.</p>
+                                <input type="range" id="sim-avgLeadTime" min="1" max="60" value="15" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div>
+                                <label for="sim-stdDevLeadTime" class="block text-sm font-medium text-slate-700">Desvio Padrão do Lead Time (dias): <span id="sim-stdDevLeadTimeValue" class="font-bold text-blue-600">3</span></label>
+                                <p class="text-xs text-slate-500 mt-1">Mede a pontualidade do fornecedor. Valor alto = fornecedor não confiável.</p>
+                                <input type="range" id="sim-stdDevLeadTime" min="0" max="30" value="3" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div>
+                                <label for="sim-serviceLevel" class="block text-sm font-medium text-slate-700">Nível de Serviço Desejado: <span id="sim-serviceLevelValue" class="font-bold text-blue-600">95%</span></label>
+                                <p class="text-xs text-slate-500 mt-1">Sua meta de não faltar produto. 95% é um padrão comum.</p>
+                                <input type="range" id="sim-serviceLevel" min="80" max="99.9" step="0.1" value="95" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col space-y-4">
+                        <div class="p-6 border rounded-lg bg-slate-50 flex-grow">
+                             <h3 class="text-lg font-semibold text-slate-800 mb-2">Resultados Calculados</h3>
+                             <div class="chart-container">
+                                <canvas id="sim-resultsChart"></canvas>
+                             </div>
+                        </div>
+                         <div class="p-4 border rounded-lg bg-slate-50">
+                            <div class="flex justify-around text-center">
+                                <div>
+                                    <p class="text-sm font-medium text-slate-600">Margem de Segurança (ES)</p>
+                                    <p id="sim-safetyStockDisplay" class="text-2xl font-bold text-amber-600">0</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-slate-600">Ponto de Ressuprimento (PR)</p>
+                                    <p id="sim-reorderPointDisplay" class="text-2xl font-bold text-blue-600">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Confirmação de Exclusão -->
+    <div id="delete-confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md modal-content transform scale-95">
+            <div class="p-6 text-center">
+                <svg class="mx-auto mb-4 text-red-500 w-12 h-12" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11V6m0 8h.01M19 10a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                </svg>
+                <h3 class="mb-5 text-lg font-normal text-slate-600">Tem certeza que deseja excluir este item?</h3>
+                <p id="delete-item-info" class="mb-5 text-sm font-medium text-slate-800"></p>
+                <button id="confirm-delete-btn" type="button" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center mr-2">
+                    Sim, tenho certeza
+                </button>
+                <button id="cancel-delete-btn" type="button" class="text-slate-500 bg-white hover:bg-slate-100 focus:ring-4 focus:outline-none focus:ring-slate-200 rounded-lg border border-slate-200 text-sm font-medium px-5 py-2.5 hover:text-slate-900 focus:z-10">
+                    Não, cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div id="toast-notification" class="fixed bottom-5 right-5 bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 toast-notification">
+        Alterações salvas com sucesso!
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Elementos do DOM
+            const inventoryTableBody = document.getElementById('inventory-table-body');
+            const addItemBtn = document.getElementById('add-item-btn');
+            const itemModal = document.getElementById('item-modal');
+            const cancelBtn = document.getElementById('cancel-btn');
+            const closeItemModalBtn = document.getElementById('close-item-modal-btn');
+            const itemForm = document.getElementById('item-form');
+            const modalTitle = document.getElementById('modal-title');
+            const totalValueEl = document.getElementById('total-value');
+            const totalItemsEl = document.getElementById('total-items');
+            const lowStockItemsEl = document.getElementById('low-stock-items');
+            const categoryFilter = document.getElementById('category-filter');
+            const lowStockFilterBtn = document.getElementById('low-stock-filter-btn');
+            const simulatorBtn = document.getElementById('simulator-btn');
+            const simulatorModal = document.getElementById('simulator-modal');
+            const closeSimulatorBtn = document.getElementById('close-simulator-btn');
+            const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+            const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+            const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+            const deleteItemInfo = document.getElementById('delete-item-info');
+            const orderQtyHeader = document.getElementById('order-qty-header');
+
+            let inventory = [];
+            let isLowStockFilterActive = false;
+            let itemToDeleteId = null;
+
+            const STORAGE_KEY = 'inventoryApp.data.v1.9';
+
+            // Funções de Persistência
+            const saveInventory = () => {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
+                } catch (e) {
+                    console.error("Erro ao salvar no localStorage:", e);
+                }
+            };
+
+            const loadInventory = () => {
+                const defaultInventory = [
+                    { id: 'PAR-001', name: 'Parafuso Sextavado M8', category: 'Fixadores', supplier: 'Fornecedor A', quantity: 1500, unit: 'Peça', cost: 0.25, safetyStock: 500, reorderPoint: 750 },
+                    { id: 'TINT-012', name: 'Tinta Acrílica Branca 18L', category: 'Pintura', supplier: 'Fornecedor B', quantity: 8, unit: 'Lata', cost: 280, safetyStock: 5, reorderPoint: 10 },
+                    { id: 'LIX-033', name: 'Lixa para Ferro Grão 100', category: 'Abrasivos', supplier: 'Fornecedor A', quantity: 450, unit: 'Folha', cost: 1.50, safetyStock: 100, reorderPoint: 150 },
+                ];
+                
+                try {
+                    const savedData = localStorage.getItem(STORAGE_KEY);
+                    if (savedData) {
+                        const parsedData = JSON.parse(savedData);
+                        if (Array.isArray(parsedData)) {
+                            inventory = parsedData;
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Erro ao carregar ou analisar dados do localStorage. Restaurando para o padrão.", e);
+                }
+
+                inventory = defaultInventory;
+                saveInventory();
+            };
+
+            // Funções Utilitárias
+            const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+            
+            const showToast = (message) => {
+                const toast = document.getElementById('toast-notification');
+                toast.textContent = message;
+                toast.classList.remove('translate-y-20', 'opacity-0');
+                setTimeout(() => {
+                    toast.classList.add('translate-y-20', 'opacity-0');
+                }, 2500);
+            };
+
+            // Funções de Renderização
+            const renderSummary = () => {
+                const totalValue = inventory.reduce((sum, item) => sum + (item.quantity * item.cost), 0);
+                const lowStockCount = inventory.filter(item => item.quantity < item.reorderPoint).length;
+
+                totalValueEl.textContent = formatCurrency(totalValue);
+                totalItemsEl.textContent = inventory.length;
+                lowStockItemsEl.textContent = lowStockCount;
+            };
+
+            const populateCategoryFilter = () => {
+                const categories = [...new Set(inventory.map(item => item.category))];
+                categoryFilter.innerHTML = '<option value="all">Todas as Categorias</option>';
+                categories.forEach(cat => {
+                    if(cat) {
+                        const option = document.createElement('option');
+                        option.value = cat;
+                        option.textContent = cat;
+                        categoryFilter.appendChild(option);
+                    }
+                });
+            };
+
+            const renderTable = () => {
+                let filteredInventory = [...inventory];
+                const selectedCategory = categoryFilter.value;
+
+                if (selectedCategory !== 'all') {
+                    filteredInventory = filteredInventory.filter(item => item.category === selectedCategory);
+                }
+
+                if (isLowStockFilterActive) {
+                    orderQtyHeader.classList.remove('hidden');
+                    filteredInventory = filteredInventory.filter(item => item.quantity < item.reorderPoint);
+                } else {
+                    orderQtyHeader.classList.add('hidden');
+                }
+
+                inventoryTableBody.innerHTML = '';
+                const colspan = isLowStockFilterActive ? 7 : 6;
+                if (filteredInventory.length === 0) {
+                    inventoryTableBody.innerHTML = `<tr><td colspan="${colspan}" class="text-center p-8 text-slate-500">Nenhum item corresponde ao filtro selecionado.</td></tr>`;
+                }
+                filteredInventory.forEach(item => {
+                    const totalValue = item.quantity * item.cost;
+                    const isLowStock = item.quantity < item.reorderPoint;
+                    const rowClass = isLowStock ? 'highlight-row' : '';
+                    
+                    const orderQuantity = Math.max(0, item.reorderPoint - item.safetyStock);
+                    const orderQtyCell = isLowStockFilterActive ? `<td class="px-6 py-4 text-center font-bold text-green-600">${orderQuantity}</td>` : '';
+
+                    const row = `
+                        <tr class="bg-white hover:bg-slate-50 ${rowClass}">
+                            <td class="px-6 py-4 font-medium text-slate-900">
+                                ${item.name}
+                                <div class="text-xs text-slate-500">SKU: ${item.id}</div>
+                            </td>
+                            <td class="px-6 py-4">${item.category}</td>
+                            <td class="px-6 py-4 text-center font-semibold">${item.quantity} ${item.unit || ''}</td>
+                            <td class="px-6 py-4 text-center">${item.reorderPoint}</td>
+                            ${orderQtyCell}
+                            <td class="px-6 py-4 font-medium">${formatCurrency(totalValue)}</td>
+                            <td class="px-6 py-4 text-center">
+                                <button data-id="${item.id}" class="edit-btn text-blue-600 hover:text-blue-800 font-medium">Editar</button>
+                                <button data-id="${item.id}" class="delete-btn text-red-600 hover:text-red-800 font-medium ml-4">Excluir</button>
+                            </td>
+                        </tr>
+                    `;
+                    inventoryTableBody.innerHTML += row;
+                });
+                attachActionListeners();
+            };
+
+            // Funções de Modal
+            const openModal = (modalEl) => {
+                modalEl.classList.remove('hidden');
+                setTimeout(() => modalEl.querySelector('.modal-content').classList.remove('scale-95'), 10);
+            };
+
+            const closeModal = (modalEl) => {
+                modalEl.querySelector('.modal-content').classList.add('scale-95');
+                setTimeout(() => modalEl.classList.add('hidden'), 300);
+            };
+            
+            const openItemModal = (item = null) => {
+                itemForm.reset();
+                if (item) {
+                    modalTitle.textContent = 'Editar Item';
+                    document.getElementById('item-id').value = item.id;
+                    document.getElementById('sku').value = item.id;
+                    document.getElementById('name').value = item.name;
+                    document.getElementById('category').value = item.category;
+                    document.getElementById('supplier').value = item.supplier;
+                    document.getElementById('quantity').value = item.quantity;
+                    document.getElementById('unit').value = item.unit;
+                    document.getElementById('cost').value = item.cost;
+                    document.getElementById('safety-stock').value = item.safetyStock;
+                    document.getElementById('reorder-point').value = item.reorderPoint;
+                } else {
+                    modalTitle.textContent = 'Adicionar Novo Item';
+                    document.getElementById('item-id').value = '';
+                }
+                openModal(itemModal);
+            };
+
+            const handleFormSubmit = (e) => {
+                e.preventDefault();
+                const originalId = document.getElementById('item-id').value;
+                const newSku = document.getElementById('sku').value;
+
+                const newItemData = {
+                    id: newSku,
+                    name: document.getElementById('name').value,
+                    category: document.getElementById('category').value,
+                    supplier: document.getElementById('supplier').value,
+                    quantity: parseInt(document.getElementById('quantity').value, 10),
+                    unit: document.getElementById('unit').value,
+                    cost: parseFloat(document.getElementById('cost').value),
+                    safetyStock: parseInt(document.getElementById('safety-stock').value, 10) || 0,
+                    reorderPoint: parseInt(document.getElementById('reorder-point').value, 10) || 0,
+                };
+
+                if (originalId) {
+                    if (inventory.some(item => item.id === newSku && item.id !== originalId)) {
+                        alert('Erro: O novo Código/SKU já existe em outro item. Por favor, use um código único.');
+                        return;
+                    }
+                    inventory = inventory.map(item => (item.id === originalId ? newItemData : item));
+                } else {
+                    if (inventory.some(item => item.id === newSku)) {
+                        alert('Erro: O Código/SKU já existe. Por favor, use um código único.');
+                        return;
+                    }
+                    inventory.push(newItemData);
+                }
+                
+                saveInventory();
+                populateCategoryFilter();
+                renderTable();
+                renderSummary();
+                closeModal(itemModal);
+                showToast('Item salvo com sucesso!');
+            };
+
+            // Lógica do Simulador de Risco
+            const Z_TABLE = { 80: 0.84, 85: 1.04, 90: 1.28, 95: 1.65, 97.5: 1.96, 98: 2.05, 99: 2.33, 99.5: 2.58, 99.9: 3.09 };
+            const getZValue = (sl) => Z_TABLE[Object.keys(Z_TABLE).map(Number).reduce((p, c) => Math.abs(c - sl) < Math.abs(p - sl) ? c : p)];
+
+            const simInputs = {
+                avgDemand: document.getElementById('sim-avgDemand'), stdDevDemand: document.getElementById('sim-stdDevDemand'),
+                avgLeadTime: document.getElementById('sim-avgLeadTime'), stdDevLeadTime: document.getElementById('sim-stdDevLeadTime'),
+                serviceLevel: document.getElementById('sim-serviceLevel'),
+            };
+            const simValues = {
+                avgDemand: document.getElementById('sim-avgDemandValue'), stdDevDemand: document.getElementById('sim-stdDevDemandValue'),
+                avgLeadTime: document.getElementById('sim-avgLeadTimeValue'), stdDevLeadTime: document.getElementById('sim-stdDevLeadTimeValue'),
+                serviceLevel: document.getElementById('sim-serviceLevelValue'),
+            };
+            const simSafetyStockDisplay = document.getElementById('sim-safetyStockDisplay');
+            const simReorderPointDisplay = document.getElementById('sim-reorderPointDisplay');
+            
+            const simResultsChart = new Chart(document.getElementById('sim-resultsChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Margem de Segurança', 'Ponto de Ressuprimento'],
+                    datasets: [{ label: 'Unidades', data: [0, 0], backgroundColor: ['#d97706', '#2563eb'] }]
+                },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+            });
+
+            const calculateSafetyStock = () => {
+                const D_avg = Number(simInputs.avgDemand.value), sigma_d = Number(simInputs.stdDevDemand.value);
+                const LT_avg = Number(simInputs.avgLeadTime.value), sigma_LT = Number(simInputs.stdDevLeadTime.value);
+                const sl = Number(simInputs.serviceLevel.value), Z = getZValue(sl);
+
+                Object.keys(simValues).forEach(key => simValues[key].textContent = simInputs[key].value + (key === 'serviceLevel' ? '%' : ''));
+
+                let es = Z * Math.sqrt((LT_avg * Math.pow(sigma_d, 2)) + (Math.pow(D_avg, 2) * Math.pow(sigma_LT, 2)));
+                const pr = (D_avg * LT_avg) + es;
+                
+                simResultsChart.data.datasets[0].data = [Math.round(es), Math.round(pr)];
+                simResultsChart.update();
+                simSafetyStockDisplay.textContent = Math.round(es);
+                simReorderPointDisplay.textContent = Math.round(pr);
+            };
+            
+            // Event Listeners
+            const attachActionListeners = () => {
+                document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', e => openItemModal(inventory.find(item => item.id === e.target.dataset.id))));
+                document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', e => {
+                    itemToDeleteId = e.target.dataset.id;
+                    const item = inventory.find(i => i.id === itemToDeleteId);
+                    if (item) {
+                        deleteItemInfo.textContent = `${item.name} (SKU: ${item.id})`;
+                        openModal(deleteConfirmModal);
+                    }
+                }));
+            };
+
+            addItemBtn.addEventListener('click', () => openItemModal());
+            cancelBtn.addEventListener('click', () => closeModal(itemModal));
+            closeItemModalBtn.addEventListener('click', () => closeModal(itemModal));
+            itemForm.addEventListener('submit', handleFormSubmit);
+
+            categoryFilter.addEventListener('change', renderTable);
+            lowStockFilterBtn.addEventListener('click', () => {
+                isLowStockFilterActive = !isLowStockFilterActive;
+                lowStockFilterBtn.classList.toggle('bg-yellow-400', isLowStockFilterActive);
+                lowStockFilterBtn.classList.toggle('text-yellow-900', isLowStockFilterActive);
+                lowStockFilterBtn.classList.toggle('bg-yellow-100', !isLowStockFilterActive);
+                lowStockFilterBtn.classList.toggle('text-yellow-800', !isLowStockFilterActive);
+                renderTable();
+            });
+
+            simulatorBtn.addEventListener('click', () => openModal(simulatorModal));
+            closeSimulatorBtn.addEventListener('click', () => closeModal(simulatorModal));
+            Object.values(simInputs).forEach(input => input.addEventListener('input', calculateSafetyStock));
+            
+            // Listeners para fechar modals
+            itemModal.addEventListener('click', (e) => { if (e.target === itemModal) closeModal(itemModal); });
+            simulatorModal.addEventListener('click', (e) => { if (e.target === simulatorModal) closeModal(simulatorModal); });
+            deleteConfirmModal.addEventListener('click', (e) => { if (e.target === deleteConfirmModal) closeModal(deleteConfirmModal); });
+            
+            cancelDeleteBtn.addEventListener('click', () => closeModal(deleteConfirmModal));
+            confirmDeleteBtn.addEventListener('click', () => {
+                if (itemToDeleteId) {
+                    inventory = inventory.filter(item => item.id !== itemToDeleteId);
+                    saveInventory();
+                    populateCategoryFilter();
+                    renderTable();
+                    renderSummary();
+                    closeModal(deleteConfirmModal);
+                    itemToDeleteId = null;
+                    showToast('Item excluído com sucesso!');
+                }
+            });
+
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    if (!itemModal.classList.contains('hidden')) closeModal(itemModal);
+                    if (!simulatorModal.classList.contains('hidden')) closeModal(simulatorModal);
+                    if (!deleteConfirmModal.classList.contains('hidden')) closeModal(deleteConfirmModal);
+                }
+            });
+            
+            // Inicialização
+            loadInventory();
+            calculateSafetyStock(); // Para o simulador
+            populateCategoryFilter();
+            renderTable();
+            renderSummary();
+        });
+    </script>
+
+</body>
+</html>
