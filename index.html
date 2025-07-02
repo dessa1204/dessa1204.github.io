@@ -49,7 +49,6 @@
             <p class="text-slate-600 mt-1">Gerencie seu inventário de forma simples e visual.</p>
         </header>
 
-        <!-- Seção de Resumo -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div class="bg-white p-6 rounded-lg shadow">
                 <h3 class="text-sm font-medium text-slate-500">Valor Total em Estoque</h3>
@@ -65,7 +64,6 @@
             </div>
         </div>
 
-        <!-- Tabela de Inventário -->
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-4 sm:p-6 flex flex-wrap gap-4 justify-between items-center border-b border-slate-200">
                 <h2 class="text-xl font-semibold w-full sm:w-auto">Inventário Atual</h2>
@@ -94,14 +92,12 @@
                         </tr>
                     </thead>
                     <tbody id="inventory-table-body">
-                        <!-- Linhas da tabela serão inseridas aqui via JS -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Modal para Adicionar/Editar Item -->
     <div id="item-modal" class="fixed inset-0 z-50 overflow-y-auto p-4 modal-backdrop hidden flex justify-center">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl modal-content transform scale-95 my-8">
             <div class="p-6 border-b border-slate-200 flex justify-between items-center">
@@ -164,7 +160,6 @@
         </div>
     </div>
 
-    <!-- Modal para Simulador de Risco -->
     <div id="simulator-modal" class="fixed inset-0 z-50 overflow-y-auto p-4 modal-backdrop hidden flex justify-center">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl modal-content transform scale-95 my-8">
             <div class="p-6 border-b border-slate-200 flex justify-between items-center">
@@ -174,7 +169,19 @@
                 </button>
             </div>
             <div class="p-6">
-                <p class="text-slate-600 mb-6 max-w-3xl">Use este simulador para calcular o Estoque de Segurança (ES) e o Ponto de Ressuprimento (PR) ideais, considerando a variabilidade da sua demanda e a inconsistência do seu fornecedor.</p>
+                <div class="mb-8 p-4 border border-dashed border-slate-300 rounded-lg">
+                    <h4 class="text-md font-semibold text-slate-700">Calculadora Rápida de Desvio Padrão</h4>
+                    <p class="text-xs text-slate-500 mt-1 mb-2">Não sabe o desvio padrão da sua demanda? Cole seus dados de vendas diárias abaixo para descobrir.</p>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <textarea id="stddev-input" rows="1" class="flex-grow rounded-md border-slate-300 shadow-sm sm:text-sm" placeholder="Ex: 50, 55, 48, 60, 52..."></textarea>
+                        <button id="calculate-stddev-btn" class="bg-slate-200 text-slate-800 px-4 py-2 text-sm font-medium rounded-md hover:bg-slate-300 transition">Calcular</button>
+                    </div>
+                    <div id="stddev-result-container" class="mt-2 hidden">
+                        <p class="text-sm">Desvio Padrão Calculado: <strong id="stddev-result" class="text-blue-600"></strong></p>
+                        <button id="apply-stddev-btn" class="text-xs text-blue-500 hover:underline">Aplicar ao simulador</button>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div class="p-6 border rounded-lg bg-slate-50">
                         <h3 class="text-lg font-semibold text-slate-800 mb-6">Ajuste os Parâmetros</h3>
@@ -231,7 +238,6 @@
         </div>
     </div>
     
-    <!-- Modal de Confirmação de Exclusão -->
     <div id="delete-confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md modal-content transform scale-95">
             <div class="p-6 text-center">
@@ -250,7 +256,6 @@
         </div>
     </div>
     
-    <!-- Toast Notification -->
     <div id="toast-notification" class="fixed bottom-5 right-5 bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 toast-notification">
         Alterações salvas com sucesso!
     </div>
@@ -279,6 +284,12 @@
             const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
             const deleteItemInfo = document.getElementById('delete-item-info');
             const orderQtyHeader = document.getElementById('order-qty-header');
+
+            const stddevInput = document.getElementById('stddev-input');
+            const calculateStddevBtn = document.getElementById('calculate-stddev-btn');
+            const stddevResultContainer = document.getElementById('stddev-result-container');
+            const stddevResultEl = document.getElementById('stddev-result');
+            const applyStddevBtn = document.getElementById('apply-stddev-btn');
 
             let inventory = [];
             let isLowStockFilterActive = false;
@@ -517,6 +528,38 @@
                 simReorderPointDisplay.textContent = Math.round(pr);
             };
             
+            // Calculadora de Desvio Padrão
+            const calculateStdDev = (data) => {
+                if (!data || data.length < 2) return 0;
+                const mean = data.reduce((acc, val) => acc + val, 0) / data.length;
+                const variance = data.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / (data.length -1); // Sample Standard Deviation
+                return Math.sqrt(variance);
+            };
+
+            calculateStddevBtn.addEventListener('click', () => {
+                const dataString = stddevInput.value;
+                const numbers = dataString.split(/[\s,]+/).filter(n => n !== '' && !isNaN(n)).map(Number);
+                
+                if (numbers.length < 2) {
+                    alert('Por favor, insira pelo menos dois números válidos.');
+                    return;
+                }
+                
+                const result = calculateStdDev(numbers);
+                stddevResultEl.textContent = result.toFixed(2);
+                stddevResultContainer.classList.remove('hidden');
+            });
+            
+            applyStddevBtn.addEventListener('click', () => {
+                const valueToApply = parseFloat(stddevResultEl.textContent);
+                if (!isNaN(valueToApply)) {
+                    simInputs.stdDevDemand.value = valueToApply;
+                    simValues.stdDevDemand.textContent = valueToApply.toFixed(2);
+                    calculateSafetyStock(); // Recalculate simulator with new value
+                }
+            });
+
+
             // Event Listeners
             const attachActionListeners = () => {
                 document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', e => openItemModal(inventory.find(item => item.id === e.target.dataset.id))));
